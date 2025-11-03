@@ -28,28 +28,40 @@ let gameStarted = false;
 let cursors;
 let wasd;
 let graphics;
+let mazeGraphics;
 let restartKey;
 let spaceKey;
 let startPopupElements = [];
 let maze = [
-  [1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,1,0,0,0,0,1],
-  [1,0,1,1,0,1,0,1,1,0,1],
-  [1,0,1,0,0,0,0,0,1,0,1],
-  [1,0,0,0,1,1,1,0,0,0,1],
-  [1,1,1,0,0,0,0,0,1,1,1],
-  [1,0,0,0,1,1,1,0,0,0,1],
-  [1,0,1,0,0,0,0,0,1,0,1],
-  [1,0,1,1,0,1,0,1,1,0,1],
-  [1,0,0,0,0,1,0,0,0,0,1],
-  [1,1,1,1,1,1,1,1,1,1,1]
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,0,1,1,1,0,1,1,0,1,0,1,1,0,1,1,1,0,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,0,1],
+  [1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1],
+  [1,1,1,1,0,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,0,1,1,1,1],
+  [1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1],
+  [1,1,1,1,0,1,0,1,1,0,1,1,1,1,1,0,1,1,0,1,0,1,1,1,1],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],
+  [1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1],
+  [1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1,1,1],
+  [1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,1,1,0,1,1,1,0,1,1,0,1,0,1,1,0,1,1,1,0,1,1,0,1],
+  [1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1],
+  [1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1],
+  [1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1],
+  [1,0,1,1,1,1,1,1,0,1,1,0,1,0,1,1,0,1,1,1,1,1,1,0,1],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
-const tileSize = 50;
-const offsetX = 35;
-const offsetY = 15;
+const tileSize = 28;
+const offsetX = 10;
+const offsetY = 10;
 
 function create() {
   const scene = this;
+  mazeGraphics = this.add.graphics();
   graphics = this.add.graphics();
   
   drawMaze();
@@ -57,7 +69,7 @@ function create() {
   player = {
     x: 1,
     y: 1,
-    speed: 3.5,
+    speed: 3,
     moving: false,
     targetX: 1,
     targetY: 1,
@@ -68,14 +80,14 @@ function create() {
   };
   
   enemies = [
-    { x: 9, y: 1, name: 'YC', color: 0xff6600, dir: 0, targetX: 9, targetY: 1, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + tileSize / 2, speed: 2 },
-    { x: 1, y: 9, name: 'SV', color: 0x00d084, dir: 1, targetX: 1, targetY: 9, pixelX: offsetX + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 2.2 },
-    { x: 9, y: 9, name: 'PV', color: 0xffd700, dir: 2, targetX: 9, targetY: 9, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 1.8 }
+    { x: 23, y: 1, name: 'YC', color: 0xff6600, dir: 0, targetX: 23, targetY: 1, pixelX: offsetX + 23 * tileSize + tileSize / 2, pixelY: offsetY + tileSize / 2, speed: 1.8 },
+    { x: 1, y: 19, name: 'SV', color: 0x00d084, dir: 1, targetX: 1, targetY: 19, pixelX: offsetX + tileSize / 2, pixelY: offsetY + 19 * tileSize + tileSize / 2, speed: 2 },
+    { x: 23, y: 19, name: 'PV', color: 0xffd700, dir: 2, targetX: 23, targetY: 19, pixelX: offsetX + 23 * tileSize + tileSize / 2, pixelY: offsetY + 19 * tileSize + tileSize / 2, speed: 1.6 }
   ];
   
   for (let y = 0; y < maze.length; y++) {
     for (let x = 0; x < maze[y].length; x++) {
-      if (maze[y][x] === 0 && !(x === 1 && y === 1) && !(x === 9 && y === 1) && !(x === 1 && y === 9) && !(x === 9 && y === 9)) {
+      if (maze[y][x] === 0 && !(x === 1 && y === 1) && !(x === 23 && y === 1) && !(x === 1 && y === 19) && !(x === 23 && y === 19)) {
         coins.push({ x: x, y: y, collected: false });
       }
     }
@@ -122,7 +134,6 @@ function update() {
   }
   
   graphics.clear();
-  drawMaze();
   
   if (cursors.left.isDown || wasd.left.isDown) {
     player.nextDirection = 'left';
@@ -262,10 +273,10 @@ function update() {
     }
   }
   
+  graphics.fillStyle(0xffd700, 1);
   for (let coin of coins) {
     if (!coin.collected) {
-      graphics.fillStyle(0xffd700, 1);
-      graphics.fillCircle(offsetX + coin.x * tileSize + tileSize / 2, offsetY + coin.y * tileSize + tileSize / 2, 5);
+      graphics.fillCircle(offsetX + coin.x * tileSize + tileSize / 2, offsetY + coin.y * tileSize + tileSize / 2, 3);
     }
   }
   
@@ -279,7 +290,7 @@ function update() {
     const dx = player.pixelX - enemy.pixelX;
     const dy = player.pixelY - enemy.pixelY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 32) {
+    if (dist < 18) {
       gameOver = true;
       showGameOver(this);
       return;
@@ -288,13 +299,17 @@ function update() {
 }
 
 function drawMaze() {
+  mazeGraphics.clear();
+  mazeGraphics.fillStyle(0x1e3a8a, 1);
+  mazeGraphics.lineStyle(1, 0x3b82f6, 1);
   for (let y = 0; y < maze.length; y++) {
     for (let x = 0; x < maze[y].length; x++) {
       if (maze[y][x] === 1) {
-        graphics.fillStyle(0x1e3a8a, 1);
-        graphics.fillRoundedRect(offsetX + x * tileSize + 2, offsetY + y * tileSize + 2, tileSize - 4, tileSize - 4, 8);
-        graphics.lineStyle(2, 0x3b82f6, 1);
-        graphics.strokeRoundedRect(offsetX + x * tileSize + 2, offsetY + y * tileSize + 2, tileSize - 4, tileSize - 4, 8);
+        const px = offsetX + x * tileSize + 1;
+        const py = offsetY + y * tileSize + 1;
+        const size = tileSize - 2;
+        mazeGraphics.fillRect(px, py, size, size);
+        mazeGraphics.strokeRect(px, py, size, size);
       }
     }
   }
@@ -302,29 +317,20 @@ function drawMaze() {
 
 function drawPlayer(x, y) {
   graphics.fillStyle(0xffd4a3, 1);
-  graphics.fillCircle(x, y, 20);
+  graphics.fillCircle(x, y, 11);
   
   graphics.fillStyle(0x000000, 1);
-  graphics.fillRect(x - 15, y - 8, 10, 3);
-  graphics.fillRect(x + 5, y - 8, 10, 3);
+  graphics.fillRect(x - 7, y - 4, 4, 2);
+  graphics.fillRect(x + 3, y - 4, 4, 2);
   
   graphics.fillStyle(0x000000, 1);
-  graphics.fillCircle(x - 8, y - 2, 3);
-  graphics.fillCircle(x + 8, y - 2, 3);
-  
-  graphics.fillStyle(0xffffff, 1);
-  graphics.fillCircle(x - 7, y - 3, 1.5);
-  graphics.fillCircle(x + 9, y - 3, 1.5);
-  
-  graphics.lineStyle(2, 0x000000, 1);
-  graphics.beginPath();
-  graphics.arc(x, y + 5, 8, 0, Math.PI, false);
-  graphics.strokePath();
+  graphics.fillRect(x - 4, y - 1, 2, 2);
+  graphics.fillRect(x + 2, y - 1, 2, 2);
   
   graphics.fillStyle(0x8b4513, 1);
-  graphics.fillRect(x - 18, y - 20, 8, 12);
-  graphics.fillRect(x + 10, y - 20, 8, 12);
-  graphics.fillRect(x - 10, y - 22, 20, 8);
+  graphics.fillRect(x - 9, y - 11, 4, 6);
+  graphics.fillRect(x + 5, y - 11, 4, 6);
+  graphics.fillRect(x - 5, y - 12, 10, 4);
 }
 
 function drawEnemy(enemy) {
@@ -333,74 +339,30 @@ function drawEnemy(enemy) {
   
   if (enemy.name === 'YC') {
     graphics.fillStyle(0xff6600, 1);
-    graphics.fillCircle(x, y, 22);
-    
-    graphics.lineStyle(0);
+    graphics.fillCircle(x, y, 12);
     graphics.fillStyle(0xffffff, 1);
-    
-    graphics.fillRect(x - 10, y - 14, 5, 10);
-    graphics.fillRect(x + 5, y - 14, 5, 10);
-    
-    graphics.fillRect(x - 3, y - 4, 6, 14);
-    
-    graphics.fillRect(x - 5, y - 4, 2, 4);
-    graphics.fillRect(x + 3, y - 4, 2, 4);
+    graphics.fillRect(x - 5, y - 6, 3, 4);
+    graphics.fillRect(x + 2, y - 6, 3, 4);
+    graphics.fillRect(x - 2, y - 1, 4, 5);
     
   } else if (enemy.name === 'SV') {
     graphics.fillStyle(0x00e676, 1);
     graphics.beginPath();
-    graphics.moveTo(x, y - 18);
-    graphics.lineTo(x - 18, y + 14);
-    graphics.lineTo(x + 18, y + 14);
+    graphics.moveTo(x, y - 10);
+    graphics.lineTo(x - 10, y + 8);
+    graphics.lineTo(x + 10, y + 8);
     graphics.closePath();
     graphics.fillPath();
-    
-    graphics.lineStyle(3, 0x00e676, 1);
-    graphics.beginPath();
-    graphics.moveTo(x - 18, y + 14);
-    graphics.lineTo(x + 18, y + 14);
-    graphics.strokePath();
-    
-    graphics.lineStyle(0);
     graphics.fillStyle(0xffffff, 1);
-    graphics.beginPath();
-    graphics.moveTo(x - 3, y + 8);
-    graphics.lineTo(x, y + 2);
-    graphics.lineTo(x + 3, y + 8);
-    graphics.lineTo(x + 5, y + 14);
-    graphics.lineTo(x - 5, y + 14);
-    graphics.closePath();
-    graphics.fillPath();
+    graphics.fillRect(x - 2, y + 2, 4, 6);
     
   } else if (enemy.name === 'PV') {
     graphics.fillStyle(0xffc107, 1);
-    graphics.fillRoundedRect(x - 18, y - 18, 36, 36, 4);
-    
-    graphics.lineStyle(3.5, 0xffffff, 1);
-    
-    graphics.beginPath();
-    graphics.moveTo(x - 8, y - 12);
-    graphics.lineTo(x - 7, y - 8);
-    graphics.lineTo(x - 5, y - 2);
-    graphics.lineTo(x - 3, y + 4);
-    graphics.lineTo(x - 1, y + 10);
-    graphics.strokePath();
-    
-    graphics.beginPath();
-    graphics.moveTo(x - 1, y - 12);
-    graphics.lineTo(x, y - 7);
-    graphics.lineTo(x + 1, y);
-    graphics.lineTo(x + 2, y + 6);
-    graphics.lineTo(x + 3, y + 10);
-    graphics.strokePath();
-    
-    graphics.beginPath();
-    graphics.moveTo(x + 6, y - 12);
-    graphics.lineTo(x + 7, y - 7);
-    graphics.lineTo(x + 8, y);
-    graphics.lineTo(x + 9, y + 6);
-    graphics.lineTo(x + 10, y + 10);
-    graphics.strokePath();
+    graphics.fillRect(x - 10, y - 10, 20, 20);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillRect(x - 4, y - 6, 2, 12);
+    graphics.fillRect(x - 1, y - 6, 2, 12);
+    graphics.fillRect(x + 2, y - 6, 2, 12);
   }
 }
 
@@ -508,7 +470,7 @@ function restartGame(scene) {
   player = {
     x: 1,
     y: 1,
-    speed: 3.5,
+    speed: 3,
     moving: false,
     targetX: 1,
     targetY: 1,
@@ -519,15 +481,15 @@ function restartGame(scene) {
   };
   
   enemies = [
-    { x: 9, y: 1, name: 'YC', color: 0xff6600, dir: 0, targetX: 9, targetY: 1, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + tileSize / 2, speed: 2 },
-    { x: 1, y: 9, name: 'SV', color: 0x00d084, dir: 1, targetX: 1, targetY: 9, pixelX: offsetX + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 2.2 },
-    { x: 9, y: 9, name: 'PV', color: 0xffd700, dir: 2, targetX: 9, targetY: 9, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 1.8 }
+    { x: 23, y: 1, name: 'YC', color: 0xff6600, dir: 0, targetX: 23, targetY: 1, pixelX: offsetX + 23 * tileSize + tileSize / 2, pixelY: offsetY + tileSize / 2, speed: 1.8 },
+    { x: 1, y: 19, name: 'SV', color: 0x00d084, dir: 1, targetX: 1, targetY: 19, pixelX: offsetX + tileSize / 2, pixelY: offsetY + 19 * tileSize + tileSize / 2, speed: 2 },
+    { x: 23, y: 19, name: 'PV', color: 0xffd700, dir: 2, targetX: 23, targetY: 19, pixelX: offsetX + 23 * tileSize + tileSize / 2, pixelY: offsetY + 19 * tileSize + tileSize / 2, speed: 1.6 }
   ];
   
   coins = [];
   for (let y = 0; y < maze.length; y++) {
     for (let x = 0; x < maze[y].length; x++) {
-      if (maze[y][x] === 0 && !(x === 1 && y === 1) && !(x === 9 && y === 1) && !(x === 1 && y === 9) && !(x === 9 && y === 9)) {
+      if (maze[y][x] === 0 && !(x === 1 && y === 1) && !(x === 23 && y === 1) && !(x === 1 && y === 19) && !(x === 23 && y === 19)) {
         coins.push({ x: x, y: y, collected: false });
       }
     }
