@@ -1,358 +1,493 @@
-// Platanus Hack 25: Snake Game
-// Navigate the snake around the "PLATANUS HACK ARCADE" title made of blocks!
-
 const config = {
   type: Phaser.AUTO,
   width: 800,
   height: 600,
-  backgroundColor: '#000000',
+  backgroundColor: '#0f0f23',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      debug: false
+    }
+  },
   scene: {
     create: create,
     update: update
   }
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);
 
-// Game variables
-let snake = [];
-let snakeSize = 15;
-let direction = { x: 1, y: 0 };
-let nextDirection = { x: 1, y: 0 };
-let food;
+let player;
+let enemies = [];
+let coins = [];
 let score = 0;
 let scoreText;
-let titleBlocks = [];
 let gameOver = false;
-let moveTimer = 0;
-let moveDelay = 150;
+let won = false;
+let cursors;
+let wasd;
 let graphics;
-
-// Pixel font patterns (5x5 grid for each letter)
-const letters = {
-  P: [[1,1,1,1],[1,0,0,1],[1,1,1,1],[1,0,0,0],[1,0,0,0]],
-  L: [[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,0,0,0],[1,1,1,1]],
-  A: [[0,1,1,0],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
-  T: [[1,1,1,1],[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
-  N: [[1,0,0,1],[1,1,0,1],[1,0,1,1],[1,0,0,1],[1,0,0,1]],
-  U: [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]],
-  S: [[0,1,1,1],[1,0,0,0],[0,1,1,0],[0,0,0,1],[1,1,1,0]],
-  H: [[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]],
-  C: [[0,1,1,1],[1,0,0,0],[1,0,0,0],[1,0,0,0],[0,1,1,1]],
-  K: [[1,0,0,1],[1,0,1,0],[1,1,0,0],[1,0,1,0],[1,0,0,1]],
-  '2': [[1,1,1,0],[0,0,0,1],[0,1,1,0],[1,0,0,0],[1,1,1,1]],
-  '5': [[1,1,1,1],[1,0,0,0],[1,1,1,0],[0,0,0,1],[1,1,1,0]],
-  ':': [[0,0,0,0],[0,1,0,0],[0,0,0,0],[0,1,0,0],[0,0,0,0]],
-  R: [[1,1,1,0],[1,0,0,1],[1,1,1,0],[1,0,1,0],[1,0,0,1]],
-  D: [[1,1,1,0],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,0]],
-  E: [[1,1,1,1],[1,0,0,0],[1,1,1,0],[1,0,0,0],[1,1,1,1]]
-};
-
-// Bold font for ARCADE (filled/solid style)
-const boldLetters = {
-  A: [[1,1,1,1,1],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1],[1,1,0,1,1]],
-  R: [[1,1,1,1,0],[1,1,0,1,1],[1,1,1,1,0],[1,1,0,1,1],[1,1,0,1,1]],
-  C: [[1,1,1,1,1],[1,1,0,0,0],[1,1,0,0,0],[1,1,0,0,0],[1,1,1,1,1]],
-  D: [[1,1,1,1,0],[1,1,0,1,1],[1,1,0,1,1],[1,1,0,1,1],[1,1,1,1,0]],
-  E: [[1,1,1,1,1],[1,1,0,0,0],[1,1,1,1,0],[1,1,0,0,0],[1,1,1,1,1]]
-};
+let restartKey;
+let maze = [
+  [1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,1,0,0,0,0,1],
+  [1,0,1,1,0,1,0,1,1,0,1],
+  [1,0,1,0,0,0,0,0,1,0,1],
+  [1,0,0,0,1,1,1,0,0,0,1],
+  [1,1,1,0,0,0,0,0,1,1,1],
+  [1,0,0,0,1,1,1,0,0,0,1],
+  [1,0,1,0,0,0,0,0,1,0,1],
+  [1,0,1,1,0,1,0,1,1,0,1],
+  [1,0,0,0,0,1,0,0,0,0,1],
+  [1,1,1,1,1,1,1,1,1,1,1]
+];
+const tileSize = 60;
+const offsetX = 50;
+const offsetY = 50;
 
 function create() {
   const scene = this;
   graphics = this.add.graphics();
-
-  // Build "PLATANUS HACK ARCADE" in cyan - centered and grid-aligned
-  // PLATANUS: 8 letters × (4 cols + 1 spacing) = 40 blocks, but last letter no spacing = 39 blocks × 15px = 585px
-  let x = Math.floor((800 - 585) / 2 / snakeSize) * snakeSize;
-  let y = Math.floor(180 / snakeSize) * snakeSize;
-  'PLATANUS'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0x00ffff);
-  });
-
-  // HACK: 4 letters × (4 cols + 1 spacing) = 20 blocks, but last letter no spacing = 19 blocks × 15px = 285px
-  x = Math.floor((800 - 285) / 2 / snakeSize) * snakeSize;
-  y = Math.floor(280 / snakeSize) * snakeSize;
-  'HACK'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0x00ffff);
-  });
-
-  // ARCADE: 6 letters × (5 cols + 1 spacing) = 36 blocks, but last letter no spacing = 35 blocks × 15px = 525px
-  x = Math.floor((800 - 525) / 2 / snakeSize) * snakeSize;
-  y = Math.floor(380 / snakeSize) * snakeSize;
-  'ARCADE'.split('').forEach(char => {
-    x = drawLetter(char, x, y, 0xff00ff, true);
-  });
-
-  // Score display
-  scoreText = this.add.text(16, 16, 'Score: 0', {
-    fontSize: '24px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#00ff00'
-  });
-
-  // Instructions
-  this.add.text(400, 560, 'Arrow Keys | Avoid Walls, Yourself & The Title!', {
-    fontSize: '16px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#888888',
-    align: 'center'
-  }).setOrigin(0.5);
-
-  // Initialize snake (start top left)
-  snake = [
-    { x: 75, y: 60 },
-    { x: 60, y: 60 },
-    { x: 45, y: 60 }
+  
+  drawMaze();
+  
+  player = {
+    x: 1,
+    y: 1,
+    speed: 3.5,
+    moving: false,
+    targetX: 1,
+    targetY: 1,
+    pixelX: offsetX + tileSize / 2,
+    pixelY: offsetY + tileSize / 2
+  };
+  
+  enemies = [
+    { x: 9, y: 1, name: 'YC', color: 0xff6600, dir: 0, targetX: 9, targetY: 1, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + tileSize / 2, speed: 2 },
+    { x: 1, y: 9, name: 'SV', color: 0x00d084, dir: 1, targetX: 1, targetY: 9, pixelX: offsetX + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 2.2 },
+    { x: 9, y: 9, name: 'PV', color: 0xffd700, dir: 2, targetX: 9, targetY: 9, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 1.8 }
   ];
-
-  // Spawn initial food
-  spawnFood();
-
-  // Keyboard input
-  this.input.keyboard.on('keydown', (event) => {
-    if (gameOver && event.key === 'r') {
-      restartGame(scene);
-      return;
-    }
-
-    if (event.key === 'ArrowUp' && direction.y === 0) {
-      nextDirection = { x: 0, y: -1 };
-    } else if (event.key === 'ArrowDown' && direction.y === 0) {
-      nextDirection = { x: 0, y: 1 };
-    } else if (event.key === 'ArrowLeft' && direction.x === 0) {
-      nextDirection = { x: -1, y: 0 };
-    } else if (event.key === 'ArrowRight' && direction.x === 0) {
-      nextDirection = { x: 1, y: 0 };
-    }
-  });
-
-  playTone(this, 440, 0.1);
-}
-
-function drawLetter(char, startX, startY, color, useBold = false) {
-  const pattern = useBold ? boldLetters[char] : letters[char];
-  if (!pattern) return startX + 30;
-
-  for (let row = 0; row < pattern.length; row++) {
-    for (let col = 0; col < pattern[row].length; col++) {
-      if (pattern[row][col]) {
-        const blockX = startX + col * snakeSize;
-        const blockY = startY + row * snakeSize;
-        titleBlocks.push({ x: blockX, y: blockY, color: color });
+  
+  for (let y = 0; y < maze.length; y++) {
+    for (let x = 0; x < maze[y].length; x++) {
+      if (maze[y][x] === 0 && !(x === 1 && y === 1) && !(x === 9 && y === 1) && !(x === 1 && y === 9) && !(x === 9 && y === 9)) {
+        coins.push({ x: x, y: y, collected: false });
       }
     }
   }
-  return startX + (pattern[0].length + 1) * snakeSize;
+  
+  scoreText = this.add.text(20, 10, 'Funding: $0K', {
+    fontSize: '28px',
+    fontFamily: 'Arial',
+    color: '#00ff88',
+    fontStyle: 'bold'
+  });
+  
+  cursors = this.input.keyboard.createCursorKeys();
+  wasd = this.input.keyboard.addKeys({
+    up: Phaser.Input.Keyboard.KeyCodes.W,
+    down: Phaser.Input.Keyboard.KeyCodes.S,
+    left: Phaser.Input.Keyboard.KeyCodes.A,
+    right: Phaser.Input.Keyboard.KeyCodes.D
+  });
+  
+  restartKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 }
 
-function update(_time, delta) {
-  if (gameOver) return;
-
-  moveTimer += delta;
-  if (moveTimer >= moveDelay) {
-    moveTimer = 0;
-    direction = nextDirection;
-    moveSnake(this);
-  }
-
-  drawGame();
-}
-
-function moveSnake(scene) {
-  const head = snake[0];
-  const newHead = {
-    x: head.x + direction.x * snakeSize,
-    y: head.y + direction.y * snakeSize
-  };
-
-  // Check wall collision
-  if (newHead.x < 0 || newHead.x >= 800 || newHead.y < 0 || newHead.y >= 600) {
-    endGame(scene);
+function update() {
+  if (gameOver || won) {
+    if (restartKey.isDown) {
+      restartGame(this);
+    }
     return;
   }
-
-  // Check self collision
-  for (let segment of snake) {
-    if (segment.x === newHead.x && segment.y === newHead.y) {
-      endGame(scene);
-      return;
-    }
-  }
-
-  // Check title block collision
-  for (let block of titleBlocks) {
-    if (newHead.x === block.x && newHead.y === block.y) {
-      endGame(scene);
-      return;
-    }
-  }
-
-  snake.unshift(newHead);
-
-  // Check food collision
-  if (newHead.x === food.x && newHead.y === food.y) {
-    score += 10;
-    scoreText.setText('Score: ' + score);
-    spawnFood();
-    playTone(scene, 880, 0.1);
-
-    if (moveDelay > 80) {
-      moveDelay -= 2;
-    }
-  } else {
-    snake.pop();
-  }
-}
-
-function spawnFood() {
-  let valid = false;
-  let attempts = 0;
-
-  while (!valid && attempts < 100) {
-    attempts++;
-    const gridX = Math.floor(Math.random() * 53) * snakeSize;
-    const gridY = Math.floor(Math.random() * 40) * snakeSize;
-
-    // Check not on snake
-    let onSnake = false;
-    for (let segment of snake) {
-      if (segment.x === gridX && segment.y === gridY) {
-        onSnake = true;
-        break;
-      }
-    }
-
-    // Check not on title blocks
-    let onTitle = false;
-    for (let block of titleBlocks) {
-      if (gridX === block.x && gridY === block.y) {
-        onTitle = true;
-        break;
-      }
-    }
-
-    if (!onSnake && !onTitle) {
-      food = { x: gridX, y: gridY };
-      valid = true;
-    }
-  }
-}
-
-function drawGame() {
+  
   graphics.clear();
-
-  // Draw title blocks
-  titleBlocks.forEach(block => {
-    graphics.fillStyle(block.color, 1);
-    graphics.fillRect(block.x, block.y, snakeSize - 2, snakeSize - 2);
-  });
-
-  // Draw snake
-  snake.forEach((segment, index) => {
-    if (index === 0) {
-      graphics.fillStyle(0x00ff00, 1);
-    } else {
-      graphics.fillStyle(0x00aa00, 1);
+  drawMaze();
+  
+  if (!player.moving) {
+    let nextX = player.x;
+    let nextY = player.y;
+    
+    if (cursors.left.isDown || wasd.left.isDown) {
+      nextX = player.x - 1;
+    } else if (cursors.right.isDown || wasd.right.isDown) {
+      nextX = player.x + 1;
+    } else if (cursors.up.isDown || wasd.up.isDown) {
+      nextY = player.y - 1;
+    } else if (cursors.down.isDown || wasd.down.isDown) {
+      nextY = player.y + 1;
     }
-    graphics.fillRect(segment.x, segment.y, snakeSize - 2, snakeSize - 2);
-  });
-
-  // Draw food
-  graphics.fillStyle(0xff0000, 1);
-  graphics.fillRect(food.x, food.y, snakeSize - 2, snakeSize - 2);
+    
+    if (nextX !== player.x || nextY !== player.y) {
+      if (maze[nextY] && maze[nextY][nextX] === 0) {
+        player.targetX = nextX;
+        player.targetY = nextY;
+        player.moving = true;
+      }
+    }
+  }
+  
+  if (player.moving) {
+    const targetPixelX = offsetX + player.targetX * tileSize + tileSize / 2;
+    const targetPixelY = offsetY + player.targetY * tileSize + tileSize / 2;
+    
+    const dx = targetPixelX - player.pixelX;
+    const dy = targetPixelY - player.pixelY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist < player.speed) {
+      player.pixelX = targetPixelX;
+      player.pixelY = targetPixelY;
+      player.x = player.targetX;
+      player.y = player.targetY;
+      player.moving = false;
+      
+      for (let coin of coins) {
+        if (!coin.collected && coin.x === player.x && coin.y === player.y) {
+          coin.collected = true;
+          score += 10;
+          scoreText.setText('Funding: $' + score + 'K');
+        }
+      }
+      
+      let allCollected = true;
+      for (let coin of coins) {
+        if (!coin.collected) {
+          allCollected = false;
+          break;
+        }
+      }
+      if (allCollected) {
+        won = true;
+        showWin(this);
+      }
+    } else {
+      player.pixelX += (dx / dist) * player.speed;
+      player.pixelY += (dy / dist) * player.speed;
+    }
+  }
+  
+  for (let enemy of enemies) {
+    const targetPixelX = offsetX + enemy.targetX * tileSize + tileSize / 2;
+    const targetPixelY = offsetY + enemy.targetY * tileSize + tileSize / 2;
+    
+    const dx = targetPixelX - enemy.pixelX;
+    const dy = targetPixelY - enemy.pixelY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    if (dist < enemy.speed) {
+      enemy.pixelX = targetPixelX;
+      enemy.pixelY = targetPixelY;
+      enemy.x = enemy.targetX;
+      enemy.y = enemy.targetY;
+      
+      const dirs = [
+        { dx: 0, dy: -1 },
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: -1, dy: 0 }
+      ];
+      
+      let validDirs = [];
+      for (let i = 0; i < dirs.length; i++) {
+        const nx = enemy.x + dirs[i].dx;
+        const ny = enemy.y + dirs[i].dy;
+        if (maze[ny] && maze[ny][nx] === 0) {
+          validDirs.push(i);
+        }
+      }
+      
+      if (validDirs.length > 0) {
+        enemy.dir = validDirs[Math.floor(Math.random() * validDirs.length)];
+      }
+      
+      const newX = enemy.x + dirs[enemy.dir].dx;
+      const newY = enemy.y + dirs[enemy.dir].dy;
+      
+      if (maze[newY] && maze[newY][newX] === 0) {
+        enemy.targetX = newX;
+        enemy.targetY = newY;
+      }
+    } else {
+      enemy.pixelX += (dx / dist) * enemy.speed;
+      enemy.pixelY += (dy / dist) * enemy.speed;
+    }
+  }
+  
+  for (let coin of coins) {
+    if (!coin.collected) {
+      graphics.fillStyle(0xffd700, 1);
+      graphics.fillCircle(offsetX + coin.x * tileSize + tileSize / 2, offsetY + coin.y * tileSize + tileSize / 2, 5);
+    }
+  }
+  
+  drawPlayer(player.pixelX, player.pixelY);
+  
+  for (let enemy of enemies) {
+    drawEnemy(enemy);
+  }
+  
+  for (let enemy of enemies) {
+    const dx = player.pixelX - enemy.pixelX;
+    const dy = player.pixelY - enemy.pixelY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 32) {
+      gameOver = true;
+      showGameOver(this);
+      return;
+    }
+  }
 }
 
-function endGame(scene) {
-  gameOver = true;
-  playTone(scene, 220, 0.5);
+function drawMaze() {
+  for (let y = 0; y < maze.length; y++) {
+    for (let x = 0; x < maze[y].length; x++) {
+      if (maze[y][x] === 1) {
+        graphics.fillStyle(0x1e3a8a, 1);
+        graphics.fillRoundedRect(offsetX + x * tileSize + 2, offsetY + y * tileSize + 2, tileSize - 4, tileSize - 4, 8);
+        graphics.lineStyle(2, 0x3b82f6, 1);
+        graphics.strokeRoundedRect(offsetX + x * tileSize + 2, offsetY + y * tileSize + 2, tileSize - 4, tileSize - 4, 8);
+      }
+    }
+  }
+}
 
-  // Semi-transparent overlay
-  const overlay = scene.add.graphics();
-  overlay.fillStyle(0x000000, 0.7);
-  overlay.fillRect(0, 0, 800, 600);
+function drawPlayer(x, y) {
+  graphics.fillStyle(0xffd4a3, 1);
+  graphics.fillCircle(x, y, 20);
+  
+  graphics.fillStyle(0x000000, 1);
+  graphics.fillRect(x - 15, y - 8, 10, 3);
+  graphics.fillRect(x + 5, y - 8, 10, 3);
+  
+  graphics.fillStyle(0x000000, 1);
+  graphics.fillCircle(x - 8, y - 2, 3);
+  graphics.fillCircle(x + 8, y - 2, 3);
+  
+  graphics.fillStyle(0xffffff, 1);
+  graphics.fillCircle(x - 7, y - 3, 1.5);
+  graphics.fillCircle(x + 9, y - 3, 1.5);
+  
+  graphics.lineStyle(2, 0x000000, 1);
+  graphics.beginPath();
+  graphics.arc(x, y + 5, 8, 0, Math.PI, false);
+  graphics.strokePath();
+  
+  graphics.fillStyle(0x8b4513, 1);
+  graphics.fillRect(x - 18, y - 20, 8, 12);
+  graphics.fillRect(x + 10, y - 20, 8, 12);
+  graphics.fillRect(x - 10, y - 22, 20, 8);
+}
 
-  // Game Over title with glow effect
-  const gameOverText = scene.add.text(400, 300, 'GAME OVER', {
-    fontSize: '64px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#ff0000',
-    align: 'center',
-    stroke: '#ff6666',
-    strokeThickness: 8
-  }).setOrigin(0.5);
-
-  // Pulsing animation for game over text
-  scene.tweens.add({
-    targets: gameOverText,
-    scale: { from: 1, to: 1.1 },
-    alpha: { from: 1, to: 0.8 },
-    duration: 800,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
-  });
-
-  // Score display
-  scene.add.text(400, 400, 'SCORE: ' + score, {
-    fontSize: '36px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#00ffff',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 4
-  }).setOrigin(0.5);
-
-  // Restart instruction with subtle animation
-  const restartText = scene.add.text(400, 480, 'Press R to Restart', {
-    fontSize: '24px',
-    fontFamily: 'Arial, sans-serif',
-    color: '#ffff00',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 3
-  }).setOrigin(0.5);
-
-  // Blinking animation for restart text
-  scene.tweens.add({
-    targets: restartText,
-    alpha: { from: 1, to: 0.3 },
-    duration: 600,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
-  });
+function drawEnemy(enemy) {
+  const x = enemy.pixelX;
+  const y = enemy.pixelY;
+  
+  if (enemy.name === 'YC') {
+    graphics.fillStyle(0xff6600, 1);
+    graphics.fillCircle(x, y, 22);
+    
+    graphics.lineStyle(0);
+    graphics.fillStyle(0xffffff, 1);
+    
+    graphics.fillRect(x - 10, y - 14, 5, 10);
+    graphics.fillRect(x + 5, y - 14, 5, 10);
+    
+    graphics.fillRect(x - 3, y - 4, 6, 14);
+    
+    graphics.fillRect(x - 5, y - 4, 2, 4);
+    graphics.fillRect(x + 3, y - 4, 2, 4);
+    
+  } else if (enemy.name === 'SV') {
+    graphics.fillStyle(0x00e676, 1);
+    graphics.beginPath();
+    graphics.moveTo(x, y - 18);
+    graphics.lineTo(x - 18, y + 14);
+    graphics.lineTo(x + 18, y + 14);
+    graphics.closePath();
+    graphics.fillPath();
+    
+    graphics.lineStyle(3, 0x00e676, 1);
+    graphics.beginPath();
+    graphics.moveTo(x - 18, y + 14);
+    graphics.lineTo(x + 18, y + 14);
+    graphics.strokePath();
+    
+    graphics.lineStyle(0);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.beginPath();
+    graphics.moveTo(x - 3, y + 8);
+    graphics.lineTo(x, y + 2);
+    graphics.lineTo(x + 3, y + 8);
+    graphics.lineTo(x + 5, y + 14);
+    graphics.lineTo(x - 5, y + 14);
+    graphics.closePath();
+    graphics.fillPath();
+    
+  } else if (enemy.name === 'PV') {
+    graphics.fillStyle(0xffc107, 1);
+    graphics.fillRoundedRect(x - 18, y - 18, 36, 36, 4);
+    
+    graphics.lineStyle(3.5, 0xffffff, 1);
+    
+    graphics.beginPath();
+    graphics.moveTo(x - 8, y - 12);
+    graphics.lineTo(x - 7, y - 8);
+    graphics.lineTo(x - 5, y - 2);
+    graphics.lineTo(x - 3, y + 4);
+    graphics.lineTo(x - 1, y + 10);
+    graphics.strokePath();
+    
+    graphics.beginPath();
+    graphics.moveTo(x - 1, y - 12);
+    graphics.lineTo(x, y - 7);
+    graphics.lineTo(x + 1, y);
+    graphics.lineTo(x + 2, y + 6);
+    graphics.lineTo(x + 3, y + 10);
+    graphics.strokePath();
+    
+    graphics.beginPath();
+    graphics.moveTo(x + 6, y - 12);
+    graphics.lineTo(x + 7, y - 7);
+    graphics.lineTo(x + 8, y);
+    graphics.lineTo(x + 9, y + 6);
+    graphics.lineTo(x + 10, y + 10);
+    graphics.strokePath();
+  }
 }
 
 function restartGame(scene) {
-  snake = [
-    { x: 75, y: 60 },
-    { x: 60, y: 60 },
-    { x: 45, y: 60 }
-  ];
-  direction = { x: 1, y: 0 };
-  nextDirection = { x: 1, y: 0 };
-  score = 0;
   gameOver = false;
-  moveDelay = 150;
-  scoreText.setText('Score: 0');
-  spawnFood();
+  won = false;
+  score = 0;
+  
+  player = {
+    x: 1,
+    y: 1,
+    speed: 3.5,
+    moving: false,
+    targetX: 1,
+    targetY: 1,
+    pixelX: offsetX + tileSize / 2,
+    pixelY: offsetY + tileSize / 2
+  };
+  
+  enemies = [
+    { x: 9, y: 1, name: 'YC', color: 0xff6600, dir: 0, targetX: 9, targetY: 1, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + tileSize / 2, speed: 2 },
+    { x: 1, y: 9, name: 'SV', color: 0x00d084, dir: 1, targetX: 1, targetY: 9, pixelX: offsetX + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 2.2 },
+    { x: 9, y: 9, name: 'PV', color: 0xffd700, dir: 2, targetX: 9, targetY: 9, pixelX: offsetX + 9 * tileSize + tileSize / 2, pixelY: offsetY + 9 * tileSize + tileSize / 2, speed: 1.8 }
+  ];
+  
+  coins = [];
+  for (let y = 0; y < maze.length; y++) {
+    for (let x = 0; x < maze[y].length; x++) {
+      if (maze[y][x] === 0 && !(x === 1 && y === 1) && !(x === 9 && y === 1) && !(x === 1 && y === 9) && !(x === 9 && y === 9)) {
+        coins.push({ x: x, y: y, collected: false });
+      }
+    }
+  }
+  
+  scoreText.setText('Funding: $0K');
   scene.scene.restart();
 }
 
-function playTone(scene, frequency, duration) {
-  const audioContext = scene.sound.context;
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
+function showGameOver(scene) {
+  const overlay = scene.add.graphics();
+  overlay.fillStyle(0x000000, 0.9);
+  overlay.fillRect(0, 0, 800, 600);
+  
+  const text = scene.add.text(400, 220, 'STARTUP FAILED', {
+    fontSize: '64px',
+    fontFamily: 'Arial',
+    color: '#ff4444',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  scene.add.text(400, 320, 'Funding: $' + score + 'K', {
+    fontSize: '36px',
+    fontFamily: 'Arial',
+    color: '#00ff88'
+  }).setOrigin(0.5);
+  
+  scene.add.text(400, 380, 'Acquired by competition', {
+    fontSize: '24px',
+    fontFamily: 'Arial',
+    color: '#888888'
+  }).setOrigin(0.5);
+  
+  const restartText = scene.add.text(400, 480, 'Press R to Restart', {
+    fontSize: '32px',
+    fontFamily: 'Arial',
+    color: '#ffff00',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  scene.tweens.add({
+    targets: text,
+    scale: { from: 1, to: 1.05 },
+    duration: 600,
+    yoyo: true,
+    repeat: -1
+  });
+  
+  scene.tweens.add({
+    targets: restartText,
+    alpha: { from: 1, to: 0.4 },
+    duration: 800,
+    yoyo: true,
+    repeat: -1
+  });
+}
 
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-
-  oscillator.frequency.value = frequency;
-  oscillator.type = 'square';
-
-  gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + duration);
+function showWin(scene) {
+  const overlay = scene.add.graphics();
+  overlay.fillStyle(0x000000, 0.9);
+  overlay.fillRect(0, 0, 800, 600);
+  
+  const text = scene.add.text(400, 200, 'EXIT ACHIEVED', {
+    fontSize: '72px',
+    fontFamily: 'Arial',
+    color: '#00ff88',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  scene.add.text(400, 300, String.fromCharCode(0x1F680), {
+    fontSize: '80px'
+  }).setOrigin(0.5);
+  
+  scene.add.text(400, 400, 'Total Funding: $' + score + 'K', {
+    fontSize: '36px',
+    fontFamily: 'Arial',
+    color: '#ffd700'
+  }).setOrigin(0.5);
+  
+  scene.add.text(400, 460, 'Unicorn Status Unlocked!', {
+    fontSize: '24px',
+    fontFamily: 'Arial',
+    color: '#ff88ff'
+  }).setOrigin(0.5);
+  
+  const restartText = scene.add.text(400, 530, 'Press R to Play Again', {
+    fontSize: '28px',
+    fontFamily: 'Arial',
+    color: '#ffff00',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  scene.tweens.add({
+    targets: text,
+    scale: { from: 1, to: 1.1 },
+    duration: 800,
+    yoyo: true,
+    repeat: -1
+  });
+  
+  scene.tweens.add({
+    targets: restartText,
+    alpha: { from: 1, to: 0.4 },
+    duration: 800,
+    yoyo: true,
+    repeat: -1
+  });
 }
