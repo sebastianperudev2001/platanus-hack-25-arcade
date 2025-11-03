@@ -24,10 +24,13 @@ let score = 0;
 let scoreText;
 let gameOver = false;
 let won = false;
+let gameStarted = false;
 let cursors;
 let wasd;
 let graphics;
 let restartKey;
+let spaceKey;
+let startPopupElements = [];
 let maze = [
   [1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,1,0,0,0,0,1],
@@ -41,9 +44,9 @@ let maze = [
   [1,0,0,0,0,1,0,0,0,0,1],
   [1,1,1,1,1,1,1,1,1,1,1]
 ];
-const tileSize = 60;
-const offsetX = 50;
-const offsetY = 50;
+const tileSize = 50;
+const offsetX = 35;
+const offsetY = 15;
 
 function create() {
   const scene = this;
@@ -59,7 +62,9 @@ function create() {
     targetX: 1,
     targetY: 1,
     pixelX: offsetX + tileSize / 2,
-    pixelY: offsetY + tileSize / 2
+    pixelY: offsetY + tileSize / 2,
+    direction: null,
+    nextDirection: null
   };
   
   enemies = [
@@ -92,9 +97,23 @@ function create() {
   });
   
   restartKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+  spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+  
+  showStartPopup(scene);
 }
 
 function update() {
+  if (!gameStarted) {
+    if (spaceKey.isDown) {
+      gameStarted = true;
+      for (let element of startPopupElements) {
+        element.destroy();
+      }
+      startPopupElements = [];
+    }
+    return;
+  }
+  
   if (gameOver || won) {
     if (restartKey.isDown) {
       restartGame(this);
@@ -105,21 +124,49 @@ function update() {
   graphics.clear();
   drawMaze();
   
+  if (cursors.left.isDown || wasd.left.isDown) {
+    player.nextDirection = 'left';
+  } else if (cursors.right.isDown || wasd.right.isDown) {
+    player.nextDirection = 'right';
+  } else if (cursors.up.isDown || wasd.up.isDown) {
+    player.nextDirection = 'up';
+  } else if (cursors.down.isDown || wasd.down.isDown) {
+    player.nextDirection = 'down';
+  }
+  
   if (!player.moving) {
-    let nextX = player.x;
-    let nextY = player.y;
-    
-    if (cursors.left.isDown || wasd.left.isDown) {
-      nextX = player.x - 1;
-    } else if (cursors.right.isDown || wasd.right.isDown) {
-      nextX = player.x + 1;
-    } else if (cursors.up.isDown || wasd.up.isDown) {
-      nextY = player.y - 1;
-    } else if (cursors.down.isDown || wasd.down.isDown) {
-      nextY = player.y + 1;
+    if (player.nextDirection) {
+      const dirs = {
+        'left': { dx: -1, dy: 0 },
+        'right': { dx: 1, dy: 0 },
+        'up': { dx: 0, dy: -1 },
+        'down': { dx: 0, dy: 1 }
+      };
+      
+      const nextDir = dirs[player.nextDirection];
+      const nextX = player.x + nextDir.dx;
+      const nextY = player.y + nextDir.dy;
+      
+      if (maze[nextY] && maze[nextY][nextX] === 0) {
+        player.direction = player.nextDirection;
+        player.targetX = nextX;
+        player.targetY = nextY;
+        player.moving = true;
+      }
     }
     
-    if (nextX !== player.x || nextY !== player.y) {
+    if (!player.moving && player.direction) {
+      const dirs = {
+        'left': { dx: -1, dy: 0 },
+        'right': { dx: 1, dy: 0 },
+        'up': { dx: 0, dy: -1 },
+        'down': { dx: 0, dy: 1 }
+      };
+      
+      const dir = dirs[player.direction];
+      const nextX = player.x + dir.dx;
+      const nextY = player.y + dir.dy;
+      
       if (maze[nextY] && maze[nextY][nextX] === 0) {
         player.targetX = nextX;
         player.targetY = nextY;
@@ -357,9 +404,105 @@ function drawEnemy(enemy) {
   }
 }
 
+function showStartPopup(scene) {
+  const overlay = scene.add.graphics();
+  overlay.fillStyle(0x000000, 0.95);
+  overlay.fillRect(0, 0, 800, 600);
+  startPopupElements.push(overlay);
+  
+  const title = scene.add.text(400, 80, 'PACFOUNDER', {
+    fontSize: '56px',
+    fontFamily: 'Arial',
+    color: '#ffff00',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  startPopupElements.push(title);
+  
+  const text1 = scene.add.text(400, 160, String.fromCharCode(0x1F680) + ' MISION ' + String.fromCharCode(0x1F680), {
+    fontSize: '32px',
+    fontFamily: 'Arial',
+    color: '#00ff88'
+  }).setOrigin(0.5);
+  startPopupElements.push(text1);
+  
+  const text2 = scene.add.text(400, 220, 'Eres un fundador bootstrapped', {
+    fontSize: '22px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  startPopupElements.push(text2);
+  
+  const text3 = scene.add.text(400, 255, 'tratando de llegar al Product-Market Fit!', {
+    fontSize: '22px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  startPopupElements.push(text3);
+  
+  const text4 = scene.add.text(400, 310, String.fromCharCode(0x26A0) + ' PELIGRO ' + String.fromCharCode(0x26A0), {
+    fontSize: '28px',
+    fontFamily: 'Arial',
+    color: '#ff4444'
+  }).setOrigin(0.5);
+  startPopupElements.push(text4);
+  
+  const text5 = scene.add.text(400, 360, 'Los VCs (Venture Capitalists) te persiguen', {
+    fontSize: '20px',
+    fontFamily: 'Arial',
+    color: '#ffcccc'
+  }).setOrigin(0.5);
+  startPopupElements.push(text5);
+  
+  const text6 = scene.add.text(400, 390, 'para diluir tu equity! HUYE de ellos!', {
+    fontSize: '20px',
+    fontFamily: 'Arial',
+    color: '#ffcccc'
+  }).setOrigin(0.5);
+  startPopupElements.push(text6);
+  
+  const text7 = scene.add.text(400, 440, String.fromCharCode(0x1F4B0) + ' Recolecta funding bootstrapping', {
+    fontSize: '20px',
+    fontFamily: 'Arial',
+    color: '#ffd700'
+  }).setOrigin(0.5);
+  startPopupElements.push(text7);
+  
+  const text8 = scene.add.text(400, 470, 'sin perder el control de tu startup!', {
+    fontSize: '20px',
+    fontFamily: 'Arial',
+    color: '#ffd700'
+  }).setOrigin(0.5);
+  startPopupElements.push(text8);
+  
+  const startText = scene.add.text(400, 540, 'PRESIONA ESPACIO PARA COMENZAR', {
+    fontSize: '24px',
+    fontFamily: 'Arial',
+    color: '#00ff88',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  startPopupElements.push(startText);
+  
+  scene.tweens.add({
+    targets: title,
+    scale: { from: 1, to: 1.1 },
+    duration: 600,
+    yoyo: true,
+    repeat: -1
+  });
+  
+  scene.tweens.add({
+    targets: startText,
+    alpha: { from: 1, to: 0.3 },
+    duration: 700,
+    yoyo: true,
+    repeat: -1
+  });
+}
+
 function restartGame(scene) {
   gameOver = false;
   won = false;
+  gameStarted = false;
   score = 0;
   
   player = {
@@ -370,7 +513,9 @@ function restartGame(scene) {
     targetX: 1,
     targetY: 1,
     pixelX: offsetX + tileSize / 2,
-    pixelY: offsetY + tileSize / 2
+    pixelY: offsetY + tileSize / 2,
+    direction: null,
+    nextDirection: null
   };
   
   enemies = [
