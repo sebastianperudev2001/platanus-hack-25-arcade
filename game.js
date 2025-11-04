@@ -60,7 +60,7 @@ let maze = [
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 ];
-const tileSize = 28;
+const tileSize = 26;
 const offsetX = 10;
 const offsetY = 10;
 
@@ -78,8 +78,8 @@ function create() {
     moving: false,
     targetX: 1,
     targetY: 1,
-    pixelX: offsetX + tileSize / 2,
-    pixelY: offsetY + tileSize / 2,
+    pixelX: offsetX + 1 * tileSize + tileSize / 2,
+    pixelY: offsetY + 1 * tileSize + tileSize / 2,
     direction: null,
     nextDirection: null
   };
@@ -105,12 +105,97 @@ function create() {
     }
   }
   
-  scoreText = this.add.text(20, 10, 'Funding: $0K', {
+  const hudX = 720;
+  
+  this.add.text(hudX, 120, 'FUNDING', {
+    fontSize: '20px',
+    fontFamily: 'Arial',
+    color: '#ffd700',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  scoreText = this.add.text(hudX, 150, '$0K', {
     fontSize: '28px',
     fontFamily: 'Arial',
     color: '#00ff88',
     fontStyle: 'bold'
-  });
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 230, 'CONTROLS', {
+    fontSize: '16px',
+    fontFamily: 'Arial',
+    color: '#888888',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 265, 'ARROWS', {
+    fontSize: '14px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 285, 'or WASD', {
+    fontSize: '14px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 320, 'SPACE', {
+    fontSize: '14px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 340, 'Pause', {
+    fontSize: '12px',
+    fontFamily: 'Arial',
+    color: '#888888'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 375, 'R', {
+    fontSize: '14px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 395, 'Restart', {
+    fontSize: '12px',
+    fontFamily: 'Arial',
+    color: '#888888'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 460, 'POWER-UP', {
+    fontSize: '16px',
+    fontFamily: 'Arial',
+    color: '#888888',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+  
+  const pyLogo = this.add.graphics();
+  pyLogo.fillStyle(0x306998, 1);
+  pyLogo.fillCircle(hudX, 495, 8);
+  pyLogo.fillCircle(hudX, 501, 8);
+  pyLogo.fillStyle(0xffd43b, 1);
+  pyLogo.fillCircle(hudX - 3, 495, 4);
+  pyLogo.fillCircle(hudX + 3, 501, 4);
+  
+  this.add.text(hudX, 525, 'Turn VCs into', {
+    fontSize: '12px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 542, 'Stealth Startups', {
+    fontSize: '12px',
+    fontFamily: 'Arial',
+    color: '#00ff88'
+  }).setOrigin(0.5);
+  
+  this.add.text(hudX, 559, 'and acquire them!', {
+    fontSize: '12px',
+    fontFamily: 'Arial',
+    color: '#ffffff'
+  }).setOrigin(0.5);
   
   cursors = this.input.keyboard.createCursorKeys();
   wasd = this.input.keyboard.addKeys({
@@ -233,7 +318,7 @@ function update() {
         if (!coin.collected && coin.x === player.x && coin.y === player.y) {
           coin.collected = true;
           score += 10;
-          scoreText.setText('Funding: $' + score + 'K');
+          scoreText.setText('$' + score + 'K');
         }
       }
       
@@ -242,7 +327,7 @@ function update() {
         powerUpActive = true;
         powerUpTimer = 600;
         score += 50;
-        scoreText.setText('Funding: $' + score + 'K');
+        scoreText.setText('$' + score + 'K');
       }
       
       let allCollected = true;
@@ -379,7 +464,7 @@ function update() {
         enemy.pixelX = offsetX + enemy.x * tileSize + tileSize / 2;
         enemy.pixelY = offsetY + enemy.y * tileSize + tileSize / 2;
         score += 100;
-        scoreText.setText('Funding: $' + score + 'K');
+        scoreText.setText('$' + score + 'K');
       } else {
         gameOver = true;
         showGameOver(this);
@@ -688,8 +773,8 @@ function restartGame(scene) {
     moving: false,
     targetX: 1,
     targetY: 1,
-    pixelX: offsetX + tileSize / 2,
-    pixelY: offsetY + tileSize / 2,
+    pixelX: offsetX + 1 * tileSize + tileSize / 2,
+    pixelY: offsetY + 1 * tileSize + tileSize / 2,
     direction: null,
     nextDirection: null
   };
@@ -716,7 +801,7 @@ function restartGame(scene) {
     }
   }
   
-  scoreText.setText('Funding: $0K');
+  scoreText.setText('$0K');
   scene.scene.restart();
 }
 
